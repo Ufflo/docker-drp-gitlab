@@ -2,6 +2,9 @@
 
 RUBY_VERSION=2.1.3
 
+# --------------------------------------------------
+# Install Ruby
+# --------------------------------------------------
 mkdir /tmp/ruby
 cd /tmp/ruby
 curl -L --progress ftp://ftp.ruby-lang.org/pub/ruby/2.1/ruby-${RUBY_VERSION}.tar.gz | tar xz

@@ -1,0 +1,36 @@
+#!/bin/bash
+
+GIT_VERSION="2.1.2"
+RUBY_VERSION="2.1.3"
+GITLAB_VERSION="7-4-stable"
+
+# --------------------------------------------------
+# Install Git
+# --------------------------------------------------
+cd /tmp
+curl -L --progress https://www.kernel.org/pub/software/scm/git/git-${GIT_VERSION}.tar.gz | tar xz
+cd git-${GIT_VERSION}
+make prefix=/usr/local all
+make prefix=/usr/local install
+
+# --------------------------------------------------
+# Install Ruby
+# --------------------------------------------------
+mkdir /tmp/ruby
+cd /tmp/ruby
+curl -L --progress ftp://ftp.ruby-lang.org/pub/ruby/2.1/ruby-${RUBY_VERSION}.tar.gz | tar xz
+cd ruby-${RUBY_VERSION}
+./configure --disable-install-rdoc
+make
+make install
+gem install bundler --no-ri --no-rdoc
+
+# --------------------------------------------------
+# Install GitLab
+# --------------------------------------------------
+
+# We'll install GitLab into home directory of the user "git"
+cd /home/git
+
+# Clone GitLab repository
+sudo -u git -H git clone https://gitlab.com/gitlab-org/gitlab-ce.git -b ${GITLAB_VERSION} gitlab

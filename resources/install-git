@@ -2,9 +2,11 @@
 
 GIT_VERSION="2.1.2"
 
+# --------------------------------------------------
+# Install Git
+# --------------------------------------------------
 cd /tmp
 curl -L --progress https://www.kernel.org/pub/software/scm/git/git-${GIT_VERSION}.tar.gz | tar xz
 cd git-${GIT_VERSION}
 make prefix=/usr/local all
 make prefix=/usr/local install
-

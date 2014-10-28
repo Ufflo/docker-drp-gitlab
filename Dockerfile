@@ -34,7 +34,23 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
 	redis-server \
 	zlib1g-dev
 
+RUN adduser --disabled-login --gecos 'GitLab' git
+
 COPY resources/ /resources/
 RUN chmod 755 -R /resources
+
 RUN /resources/install-git
 RUN /resources/install-ruby
+RUN /resources/install-gitlab
+
+RUN /resources/config
+
+# Config PostgreSQL
+#USER postgres
+#RUN /etc/init.d/postgresql start &&\
+#	psql --command "CREATE USER git CREATEDB;" &&\
+#	createdb -O git gitlabhq_production
+
+# Redis
+#RUN /resources/config
+

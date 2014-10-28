@@ -1,0 +1,80 @@
+#!/bin/bash
+
+# --------------------------------------------------
+# Configuration variables
+# --------------------------------------------------
+
+# GitLab
+UNICORN_WORKERS="2"
+
+# --------------------------------------------------
+# Config PostgreSQL
+# --------------------------------------------------
+
+# Start the service to make database reachable
+/etc/init.d/postgresql start
+
+# Create a user for GitLab
+sudo -u postgres psql --command "CREATE USER git CREATEDB;"
+sudo -u postgres psql --command "CREATE DATABASE gitlabhq_production OWNER git;"
+
+# --------------------------------------------------
+# Config Redis
+# --------------------------------------------------
+
+# Configure redis to use sockets
+cp /etc/redis/redis.conf /etc/redis/redis.conf.orig
+
+# Disable Redis listening on TCP by setting 'port' to 0
+#sed 's/^port .*/port 0/' /etc/redis/redis.conf.orig | tee /etc/redis/redis.conf
+sed 's/^port .*/port 0/' /etc/redis/redis.conf.orig > /etc/redis/redis.conf
+
+# Enable Redis socket for default Debian / Ubuntu path
+#echo 'unixsocket /var/run/redis/redis.sock' | tee -a /etc/redis/redis.conf
+echo 'unixsocket /var/run/redis/redis.sock' >> /etc/redis/redis.conf
+
+# Activate the changes to redis.conf
+#service redis-server restart
+service redis-server start
+
+# Add git to the redis group
+usermod -aG redis git
+
+# --------------------------------------------------
+# Config GitLab
+# --------------------------------------------------
+
+# Go to GitLab installation folder
+cd /home/git/gitlab
+
+# Copy the example GitLab config
+#sudo -u git -H cp config/gitlab.yml.example config/gitlab.yml
+
+# Update GitLab config file, follow the directions at top of file
+#sudo -u git -H editor config/gitlab.yml
+sudo -u git -H sed 's,bin_path: /usr/bin/git,bin_path: /usr/local/bin/git,' config/gitlab.yml.example > config/gitlab.yml
+
+# Make sure GitLab can write to the log/ and tmp/ directories
+sudo chown -R git log/
+sudo chown -R git tmp/
+sudo chmod -R u+rwX log/
+sudo chmod -R u+rwX tmp/
+
+# Create directory for satellites
+sudo -u git -H mkdir /home/git/gitlab-satellites
+sudo chmod u+rwx,g=rx,o-rwx /home/git/gitlab-satellites
+
+# Make sure GitLab can write to the tmp/pids/ and tmp/sockets/ directories
+sudo chmod -R u+rwX tmp/pids/
+sudo chmod -R u+rwX tmp/sockets/
+
+# Make sure GitLab can write to the public/uploads/ directory
+sudo chmod -R u+rwX  public/uploads
+
+# Copy the example Unicorn config
+#sudo -u git -H cp config/unicorn.rb.example config/unicorn.rb
+
+# Enable cluster mode if you expect to have a high load instance
+# Ex. change amount of workers to 3 for 2GB RAM server
+# Set the number of workers to at least the number of cores
+sudo -u git -H sed "s/worker_processes 2/worker_processes ${UNICORN_WORKERS}/" config/unicorn.rb.example > config/unicorn.rb

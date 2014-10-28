@@ -1,0 +1,13 @@
+#!/bin/bash
+
+GITLAB_VERSION="7-4-stable"
+
+# --------------------------------------------------
+# Install GitLab
+# --------------------------------------------------
+
+# We'll install GitLab into home directory of the user "git"
+cd /home/git
+
+# Clone GitLab repository
+sudo -u git -H git clone https://gitlab.com/gitlab-org/gitlab-ce.git -b ${GITLAB_VERSION} gitlab
