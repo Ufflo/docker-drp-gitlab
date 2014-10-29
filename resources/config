@@ -78,3 +78,82 @@ sudo chmod -R u+rwX  public/uploads
 # Ex. change amount of workers to 3 for 2GB RAM server
 # Set the number of workers to at least the number of cores
 sudo -u git -H sed "s/worker_processes 2/worker_processes ${UNICORN_WORKERS}/" config/unicorn.rb.example > config/unicorn.rb
+
+# Copy the example Rack attack config
+sudo -u git -H cp config/initializers/rack_attack.rb.example config/initializers/rack_attack.rb
+
+# Configure Git global settings for git user, useful when editing via web
+# Edit user.email according to what is set in gitlab.yml
+sudo -u git -H git config --global user.name "GitLab"
+sudo -u git -H git config --global user.email "example@example.com"
+sudo -u git -H git config --global core.autocrlf input
+
+# Configure Redis connection settings
+sudo -u git -H cp config/resque.yml.example config/resque.yml
+
+# Change the Redis socket path if you are not using the default Debian / Ubuntu configuration
+#sudo -u git -H editor config/resque.yml
+
+# PostgreSQL only:
+sudo -u git cp config/database.yml.postgresql config/database.yml
+
+# PostgreSQL and MySQL:
+# Make config/database.yml readable to git only
+sudo -u git -H chmod o-rwx config/database.yml
+
+# --------------------------------------------------
+# Install Gems
+# --------------------------------------------------
+
+# For PostgreSQL (note, the option says "without ... mysql")
+sudo -u git -H bundle install --deployment --without development test mysql aws
+
+# --------------------------------------------------
+# Install GitLab Shell
+# --------------------------------------------------
+
+# Run the installation task for gitlab-shell (replace `REDIS_URL` if needed):
+sudo -u git -H bundle exec rake gitlab:shell:install[v2.0.1] REDIS_URL=unix:/var/run/redis/redis.sock RAILS_ENV=production
+
+# By default, the gitlab-shell config is generated from your main GitLab config.
+# You can review (and modify) the gitlab-shell config as follows:
+#sudo -u git -H editor /home/git/gitlab-shell/config.yml
+
+# --------------------------------------------------
+# Initialize Database and Activate Advanced Features
+# --------------------------------------------------
+
+sudo -u git -H echo yes | bundle exec rake gitlab:setup RAILS_ENV=production
+
+# --------------------------------------------------
+# IOnstall Init Script
+# --------------------------------------------------
+
+cp lib/support/init.d/gitlab /etc/init.d/gitlab
+
+# --------------------------------------------------
+# Setup Logrotate
+# --------------------------------------------------
+
+cp lib/support/logrotate/gitlab /etc/logrotate.d/gitlab
+
+# --------------------------------------------------
+# Compile Assets
+# --------------------------------------------------
+
+sudo -u git -H bundle exec rake assets:precompile RAILS_ENV=production
+
+# --------------------------------------------------
+# Setup Nginx
+# --------------------------------------------------
+
+# Copy the example site config:
+cp lib/support/nginx/gitlab /etc/nginx/sites-available/gitlab
+ln -s /etc/nginx/sites-available/gitlab /etc/nginx/sites-enabled/gitlab
+
+# Change YOUR_SERVER_FQDN to the fully-qualified
+# domain name of your host serving GitLab.
+#sudo editor /etc/nginx/sites-available/gitlab
+
+
+
